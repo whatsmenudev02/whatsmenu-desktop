@@ -8,8 +8,21 @@ import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
 import path from 'node:path'
+import fs from 'node:fs'
 
 const config: ForgeConfig = {
+  hooks: {
+    postMake: async (ctx, makeResult) => {
+      for (const makeTarget of makeResult) {
+        makeTarget.artifacts.forEach((artifact, index) => {
+          if (index !== 0) {
+            fs.renameSync(artifact, artifact.split(makeTarget.packageJSON.version).join(`${makeTarget.packageJSON.version}_${makeTarget.arch}`))
+          }
+        });
+      }
+      return makeResult
+    }
+  },
   packagerConfig: {
     asar: true,
     icon: './src/images/app_icon.ico',
@@ -25,7 +38,7 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   
-  makers: [new MakerSquirrel({ setupIcon: './src/images/install_icon.ico', iconUrl: 'https://whatsmenu.com.br/favicon/app_icon.ico' }), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  makers: [new MakerSquirrel({ setupIcon: './src/images/install_icon.ico', iconUrl: 'https://whatsmenu.com.br/favicon/app_icon.ico',  }), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
   publishers: [
     {
       name: '@electron-forge/publisher-github',
@@ -35,7 +48,7 @@ const config: ForgeConfig = {
           name: 'whatsmenu-desktop'
         },
         prerelease: true,
-      }
+      },
     }
   ],
   plugins: [
