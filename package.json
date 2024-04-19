@@ -8,8 +8,10 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make --arch=\"ia32,x64\"",
-    "publish": "electron-forge publish --arch=\"ia32,x64\"",
-    "release": "npm version patch -m \"Upgrade version \" && npm run publish",
+    "publish": "electron-forge publish ",
+    "publish:32bits": "electron-forge publish --arch=\"ia32\"",
+    "publish:64bits": "electron-forge publish --arch=\"x64\"",
+    "release": "npm version patch -m \"Upgrade version \" && npm run publish:32bits && npm run publish:64bits",
     "release:no-make": "npm version patch -m \"Upgrade version \" && electron-forge publish --from-dry-run",
     "lint": "eslint --ext .ts,.tsx ."
   },
