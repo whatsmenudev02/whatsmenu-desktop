@@ -12,16 +12,16 @@ import fs from 'node:fs'
 
 const config: ForgeConfig = {
   hooks: {
-    // postMake: async (ctx, makeResult) => {
-    //   for (const makeTarget of makeResult) {
-    //     makeTarget.artifacts.forEach((artifact, index) => {
-    //       if (index !== 0) {
-    //         fs.renameSync(artifact, artifact.split(makeTarget.packageJSON.version).join(`${makeTarget.packageJSON.version}_${makeTarget.arch}`))
-    //       }
-    //     });
-    //   }
-    //   return makeResult
-    // }
+    postMake: async (ctx, makeResult) => {
+      for (const makeTarget of makeResult) {
+        makeTarget.artifacts.forEach((artifact, index) => {
+          if (index !== 0) {
+            fs.renameSync(artifact, artifact.split(makeTarget.packageJSON.version).join(`${makeTarget.packageJSON.version}_${makeTarget.arch}`))
+          }
+        });
+      }
+      return makeResult
+    }
   },
   packagerConfig: {
     asar: true,
