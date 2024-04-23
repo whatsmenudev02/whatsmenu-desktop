@@ -3,7 +3,7 @@ import { mainWindow } from ".";
 import { whatsmenuWindow } from "../windows/whatsmenu-window";
 import { botWindow } from "../windows/bot-window";
 
-const server = 'https://whatsmenu-desktop-update-server.vercel.app'
+const server = 'https://whatsmenu-desktop-update-server-omega.vercel.app/'
 const url = `${server}/update/${process.platform}/${app.getVersion()}`
 const UPDATE_CHECK_INTERVAL = 1000 * 60
 autoUpdater.setFeedURL({ url })
