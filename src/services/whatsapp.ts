@@ -3,13 +3,15 @@ import isDev from "electron-is-dev";
 import child_process from "node:child_process";
 import { promisify } from "util";
 import WAWebJS, { Client, ClientOptions, LocalAuth } from "whatsapp-web.js";
+import { store } from './../main/store';
 
 import { EventEmitter } from "node:events";
-import { store } from "../main/store";
-import { onmessage } from "../utils/whatsapp-bot-messages";
+import { resolveInFixedTime } from '../utils/resolve-in-fixed-time';
+import { updateClient } from "./whatsmenu";
+import { ClientType } from "../@types/client";
 
 export class WhatsApp {
-  messagesQueue: Array<{ contact: string; message: string }> = [];
+  messagesQueue: Array<{ contact: string; message: string, client?: ClientType }> = [];
   bot: Client | null = null;
   firstConection = false;
   events = new EventEmitter();
@@ -115,16 +117,12 @@ export class WhatsApp {
   async sendQueuedmessages() {
     setTimeout(async () => {
       for (const messageQueued of this.messagesQueue) {
-        const { contact, message } = messageQueued;
-        // const chat = await this.checkNinthDigit(contact);
+        const { contact, message, client } = messageQueued;
+        const contactId = await this.checkNinthDigit(contact, client);
 
         try {
           setTimeout(() => {
-            // if (chat) {
-            //   chat.sendMessage(message);              
-            // } else {
-              this.bot.sendMessage(`${contact}@c.us`, message);
-            // }
+            this.bot.sendMessage(contactId?._serialized, message);
           }, 1000);
         } catch (error) {
           console.error(error);
@@ -134,27 +132,64 @@ export class WhatsApp {
     }, 5 * 1000);
   }
 
-  checkNinthDigit = async (contact: string): Promise<WAWebJS.Chat> => {
+  checkNinthDigit = async (contact: string, client: ClientType): Promise<WAWebJS.ContactId> => {
+    console.log(client,'client');
+    if (client?.controls?.whatsapp?.contactId) {
+      return client.controls.whatsapp.contactId
+    }
+    let contactId: WAWebJS.ContactId
+
     try {
-      let chat: WAWebJS.Chat
       if (
         contact.startsWith("55") &&
         contact.length === 13 &&
         contact[4] === "9"
       ) {
-        chat = await this.bot.getChatById(
-          `${contact.slice(0, 4) + contact.slice(5)}@c.us`
-        );
+        contactId = await resolveInFixedTime({ promise: this.bot.getNumberId(`${contact.slice(0, 4) + contact.slice(5)}`), secondsAwait: 5 })
       }
 
-      if (!chat) {
-        chat = await this.bot.getChatById(`${contact}@c.us`);
+      if (!contactId) {
+        contactId = await resolveInFixedTime({ promise: this.bot.getNumberId(contact), secondsAwait: 5 })
       }
 
-      return chat
+      return contactId
     } catch (error) {
-      console.error(error);
-      throw error
+      if (error.cause === 'timeout') {
+        const response = await fetch(`https://bot.whatsmenu.com.br/whatsapp/${contact}/check`, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+          .then(response => response.json())
+          .then(data => {
+            return data
+          })
+          .catch((err) => {
+            throw err
+          });
+
+          if (!response.contactId) {
+            throw new Error('contactId not found', { cause: "checkNinthDigit" })
+          }
+        return response.contactId
+      } else {
+        console.error(error);
+        throw error
+      }
+    } finally {
+      if (client?.controls) {
+        client.controls.whatsapp = {
+          contactId
+        }
+        updateClient({ client })
+      }
     }
   };
+
+  validateContact(callback: (contact: string) => Promise<WAWebJS.ContactId>, contact: string): Promise<WAWebJS.ContactId> {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        reject(new Error("Timeout", { cause: 'timeout' }))
+      }, 5 * 1000);
+      callback(contact).then(resolve).catch(reject)
+    })
+  }
 }

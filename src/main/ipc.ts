@@ -1,23 +1,21 @@
 import { BrowserWindow, app, dialog, ipcMain } from "electron";
 import { whatsAppService } from ".";
-import { Printer, store } from "./store";
 import { botWindow } from "../windows/bot-window";
+import { Printer, store } from "./store";
+import { ClientType } from "../@types/client";
 
 ipcMain.on(
   "send-message",
-  async (_, { contact, message }: { contact: string; message: string }) => {
+  async (_, { contact, message, client }: { contact: string; message: string, client?: ClientType }) => {
     const botState = await whatsAppService.bot?.getState()
     try {
       if (botState === 'CONNECTED') {
-        // const chat = await whatsAppService.checkNinthDigit(contact)
-        // if (chat) {
-        //   chat.sendMessage(message);
-        // } else {
-          whatsAppService.bot.sendMessage(`${contact}@c.us`, message);
-        // }
+        const contactId = await whatsAppService.checkNinthDigit(contact, client);
+        whatsAppService.bot.sendMessage(contactId._serialized, message);
       } else {
         whatsAppService.messagesQueue.push({
           contact: `${contact}`,
+          client,
           message,
         });
         if (!botWindow.windowIsOpen) {
@@ -25,6 +23,7 @@ ipcMain.on(
         }
       }
     } catch (error) {
+      console.log(error, 'error');
       if (error instanceof Error) {
         if (error.cause === "checkNinthDigit") {
           dialog.showErrorBox("Ops!", error.message);
@@ -119,3 +118,7 @@ ipcMain.on("print", async (_, url) => {
   }
   return "shown print dialog";
 });
+
+ipcMain.on('storeProfile', (_, profile) => {
+  store.set('configs.profile', profile)
+})

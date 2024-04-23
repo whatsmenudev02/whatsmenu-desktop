@@ -1,7 +1,7 @@
 {
   "name": "whatsmenu-desktop",
   "productName": "WhatsMenu Desktop",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Versão Desktop para WhatsMenu",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "autoprefixer": "^10.4.19",
-    "electron": "29.2.0",
+    "electron": "^30.0.1",
     "electron-is-dev": "^3.0.1",
     "eslint": "^8.0.1",
     "eslint-plugin-import": "^2.25.0",
@@ -50,6 +50,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "axios": "^1.6.8",
     "dotenv": "^16.4.5",
     "electron-prompt": "^1.7.0",
     "electron-squirrel-startup": "^1.0.0",
